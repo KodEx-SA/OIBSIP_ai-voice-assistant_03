@@ -5,3 +5,5 @@ venv
 ai
 ai/
 /ai
+schema/schema.sql
+/schema/schema.sql
