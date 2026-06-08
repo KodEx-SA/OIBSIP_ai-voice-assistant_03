@@ -1,5 +1,5 @@
 """
-main.py — Clare voice assistant entrypoint
+main.py - Clare voice assistant entrypoint
 Fixes:
   - wait_for_participant() added (was the cause of no voice I/O)
   - Memory integrated: sessions, conversation history, long-term facts
@@ -125,7 +125,7 @@ async def entrypoint(ctx: JobContext):
     # Give the audio pipeline a moment to initialise
     await asyncio.sleep(1)
 
-    # Clare's greeting — checks memory for a known name
+    # Clare's greeting - checks memory for a known name
     user_name = await memory.get_memory("user_name")
     greeting  = f"Hi {user_name}, I'm Clare. How may I help you?" if user_name else "Hi, I'm Clare. How may I help you?"
     await session.say(greeting, allow_interruptions=True)
