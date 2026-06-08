@@ -1,5 +1,5 @@
 """
-api.py — Clare's tool functions
+api.py - Clare's tool functions
 Includes temperature control + memory tools (remember / recall / forget).
 """
 
@@ -47,9 +47,9 @@ class AssistantAgentFunction:
         """
         start = time.monotonic()
         try:
-            temp      = self._temperature_zones[zone]
+            temp = self._temperature_zones[zone]
             zone_name = zone.value.replace("_", " ").title()
-            message   = f"The temperature in the {zone_name} is {temp}°C."
+            message = f"The temperature in the {zone_name} is {temp}°C."
 
             logger.info("Temperature check - zone: %s, temp: %s°C", zone.value, temp)
 
@@ -113,7 +113,7 @@ class AssistantAgentFunction:
         Args:
             key: The identifier of the memory to retrieve
         """
-        start   = time.monotonic()
+        start = time.monotonic()
         content = await self.memory.get_memory(key)
 
         if content:
@@ -137,9 +137,9 @@ class AssistantAgentFunction:
         Args:
             key: The identifier of the memory to delete
         """
-        start   = time.monotonic()
+        start = time.monotonic()
         deleted = await self.memory.delete_memory(key)
-        result  = {"key": key, "deleted": deleted}
+        result = {"key": key, "deleted": deleted}
 
         await self.memory.log_tool_execution(
             tool_name = "forget",
@@ -153,11 +153,11 @@ class AssistantAgentFunction:
     @function_tool()
     async def list_memories(self, context: RunContext):
         """List all information stored in long-term memory."""
-        start    = time.monotonic()
+        start = time.monotonic()
         memories = await self.memory.get_all_memories()
 
         result = {
-            "count":    len(memories),
+            "count": len(memories),
             "memories": [{"key": m["key"], "content": m["content"]} for m in memories],
         }
 

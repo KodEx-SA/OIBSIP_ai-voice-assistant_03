@@ -4,7 +4,8 @@ import { supabase } from '@/lib/supabase'
 
 export default function StatsBar() {
   const [stats, setStats] = useState({ sessions: 0, messages: 0, tools: 0, memories: 0, live: 0 })
-  const [tick,  setTick]  = useState(0)
+  const [now, setNow] = useState('');
+  const [tick, setTick] = useState(0);
 
   const load = async () => {
     const [s, m, t, mem, live] = await Promise.all([
@@ -15,11 +16,11 @@ export default function StatsBar() {
       supabase.from('sessions').select('id', { count: 'exact', head: true }).is('ended_at', null),
     ])
     setStats({
-      sessions:  s.count  ?? 0,
-      messages:  m.count  ?? 0,
-      tools:     t.count  ?? 0,
-      memories:  mem.count ?? 0,
-      live:      live.count ?? 0,
+      sessions: s.count ?? 0,
+      messages: m.count ?? 0,
+      tools: t.count ?? 0,
+      memories: mem.count ?? 0,
+      live: live.count ?? 0,
     })
   }
 
@@ -27,13 +28,14 @@ export default function StatsBar() {
 
   // Tick clock every second
   useEffect(() => {
-    const t = setInterval(() => setTick((n) => n + 1), 1000)
+    const update = () =>
+      setNow(new Date().toLocaleTimeString('en-ZA', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+      }))
+    update()
+    const t = setInterval(update, 1000)
     return () => clearInterval(t)
   }, [])
-
-  const now = new Date().toLocaleTimeString('en-ZA', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  })
 
   const stat = (label: string, value: number, color = 'text-cyan', glow = 'glow-cyan') => (
     <div className="flex flex-col items-center">
@@ -54,10 +56,10 @@ export default function StatsBar() {
 
       {/* Stats */}
       <div className="flex items-center gap-8">
-        {stat('SESSIONS',  stats.sessions,  'text-cyan',  'glow-cyan')}
-        {stat('MESSAGES',  stats.messages,  'text-cyan',  'glow-cyan')}
-        {stat('TOOL CALLS',stats.tools,     'text-amber', 'glow-amber')}
-        {stat('MEMORIES',  stats.memories,  'text-green', 'glow-green')}
+        {stat('SESSIONS', stats.sessions, 'text-cyan', 'glow-cyan')}
+        {stat('MESSAGES', stats.messages, 'text-cyan', 'glow-cyan')}
+        {stat('TOOL CALLS', stats.tools, 'text-amber', 'glow-amber')}
+        {stat('MEMORIES', stats.memories, 'text-green', 'glow-green')}
         <div className="flex flex-col items-center">
           <span className={`font-display text-lg font-bold glow-green ${stats.live > 0 ? 'text-green animate-pulse' : 'text-muted'}`}>
             {stats.live}
