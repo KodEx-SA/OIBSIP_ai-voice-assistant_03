@@ -1,14 +1,4 @@
-venv
-.venv
-/venv
-ai
-ai/
-/ai
-schema/schema.sql
-/schema/schema.sql
-# /__pycache__
-# __pycache__
-# __pycache__/
+node_modules
 node_modules/
 dist
 dist/
@@ -20,6 +10,8 @@ coverage/
 *.log/
 .env
 .env/
+.env.local
+.env.local/
 .DS_Store
 .DS_Store/
 .idea
@@ -32,3 +24,5 @@ coverage/
 *.ntvs*/
 *.njsproj
 *.njsproj/
+*.sln
+*.sln/
