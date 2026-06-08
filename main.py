@@ -133,11 +133,20 @@ async def entrypoint(ctx: JobContext):
     # ------------------------------------------------------------------ #
     #  9. Keep alive and clean up when the room closes                    #
     # ------------------------------------------------------------------ #
+    
+    disconnect_ev = asyncio.Event()
+
+    def _on_disconnect(*_):
+        disconnect_ev.set()
+
+    ctx.room.on("disconnected", _on_disconnect)
+
     try:
-        await ctx.room.wait_for_disconnect()
+        await disconnect_ev.wait()
     finally:
+        await session.stop()
         await memory.end_session()
-        logger.info("Session ended cleanly.")
+        logger.info("Session ended, memory saved, and disconnected from room.")
 
 
 if __name__ == "__main__":
