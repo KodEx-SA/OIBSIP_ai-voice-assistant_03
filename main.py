@@ -1,8 +1,7 @@
 """
 main.py - Clare voice assistant entrypoint
-Fixes:
-  - wait_for_participant() added (was the cause of no voice I/O)
-  - Memory integrated: sessions, conversation history, long-term facts
+Pipeline: Deepgram STT -> Groq LLM -> Cartesia TTS -> Silero VAD
+All free-tier providers, no OpenAI required.
 """
 
 import asyncio
@@ -10,11 +9,13 @@ import logging
 from dotenv import load_dotenv
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli
 from livekit.agents import Agent, AgentSession, RoomInputOptions
-import livekit.plugins.openai as openai
-import livekit.plugins.silero as silero
+import livekit.plugins.groq as groq # =============== used for Groq via .with_groq() ===============
+import livekit.plugins.deepgram as deepgram
+import livekit.plugins.cartesia as cartesia
+import livekit.plugins.silero   as silero
 
 from memory import ClareMemory
-from api import AssistantAgentFunction
+from api    import AssistantAgentFunction
 
 load_dotenv()
 
@@ -27,33 +28,34 @@ logger = logging.getLogger("clare.main")
 
 async def entrypoint(ctx: JobContext):
     # ------------------------------------------------------------------ #
-    #  1. Connect to the LiveKit room                                      #
+    #  1. Connect to the LiveKit room                                    #
     # ------------------------------------------------------------------ #
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
     # ------------------------------------------------------------------ #
-    #  2. Wait for a user to actually join — THIS was the voice bug fix    #
-    #     Without this, Clare has no audio track to read from or write to  #
+    #  2. Wait for participant — graceful exit if they leave too early   #
     # ------------------------------------------------------------------ #
     logger.info("Waiting for participant to join room: %s", ctx.room.name)
-    participant = await ctx.wait_for_participant()
-    logger.info("Participant joined: %s", participant.identity)
+    try:
+        participant = await ctx.wait_for_participant()
+        logger.info("Participant joined: %s", participant.identity)
+    except RuntimeError as e:
+        logger.warning("Room closed before participant joined — %s", e)
+        return
 
     # ------------------------------------------------------------------ #
-    #  3. Initialise memory and start a session                            #
+    #  3. Initialise memory                                              #
     # ------------------------------------------------------------------ #
     memory = ClareMemory()
     await memory.start_session(room_id=ctx.room.name)
-
-    # Load any stored long-term memories to inject into Clare's prompt
     memory_context = await memory.build_memory_context()
 
     # ------------------------------------------------------------------ #
-    #  4. Build Clare's system instructions (with memory context injected) #
+    #  4. System instructions                                            #
     # ------------------------------------------------------------------ #
     base_instructions = (
         "You are Clare, a voice assistant created by Ashley (KodEx-SA). "
-        "Your interface with users is voice only — keep responses short and natural. "
+        "Your interface with users is voice only - keep responses short and natural. "
         "Avoid complex punctuation, long sentences, or lists. Speak conversationally. "
         "You can check temperatures in various zones. "
         "You have long-term memory: use 'remember' to store facts the user tells you, "
@@ -69,7 +71,7 @@ async def entrypoint(ctx: JobContext):
     )
 
     # ------------------------------------------------------------------ #
-    #  5. Wire up tools and agent                                          #
+    #  5. Tools                                                          #
     # ------------------------------------------------------------------ #
     agent_function = AssistantAgentFunction(memory=memory)
 
@@ -85,36 +87,35 @@ async def entrypoint(ctx: JobContext):
     )
 
     # ------------------------------------------------------------------ #
-    #  6. Build the voice pipeline                                         #
+    #  6. Voice pipeline - all free tier                                 #
+    #                                                                    #
+    #   STT: Deepgram  - nova-3 model, best accuracy, free $200 credit   #
+    #   LLM: Groq      - llama-3.1-8b-instant, fastest free LLM available #
+    #   TTS: Cartesia  - sonic-english, natural voice, free tier         #
+    #   VAD: Silero    - local, always free                              #
     # ------------------------------------------------------------------ #
     session = AgentSession(
-        stt=openai.STT(),
-        llm=openai.LLM(model="gpt-4o-mini"),
-        tts=openai.TTS(),
+        stt=deepgram.STT(model="nova-3"),
+        llm=groq.LLM(model="llama-3.3-70b-versatile"),
+        tts=cartesia.TTS(voice="71a7ad14-091d-4441-9aa3-40b6bb81b11f"),  # British female
         vad=silero.VAD.load(),
     )
 
     # ------------------------------------------------------------------ #
-    #  7. Hook into session events to save conversation to memory          #
+    #  7. Save conversation to memory                                    #
     # ------------------------------------------------------------------ #
     @session.on("user_input_transcribed")
     def on_user_spoke(event):
-        """Save every user utterance to the session history."""
         if event.is_final and event.transcript.strip():
-            asyncio.ensure_future(
-                memory.save_message("user", event.transcript)
-            )
+            asyncio.ensure_future(memory.save_message("user", event.transcript))
 
     @session.on("agent_speech_committed")
     def on_agent_spoke(event):
-        """Save every Clare response to the session history."""
         if hasattr(event, "transcript") and event.transcript.strip():
-            asyncio.ensure_future(
-                memory.save_message("assistant", event.transcript)
-            )
+            asyncio.ensure_future(memory.save_message("assistant", event.transcript))
 
     # ------------------------------------------------------------------ #
-    #  8. Start the session (pass participant so audio tracks are linked)  #
+    #  8. Start session                                                  #
     # ------------------------------------------------------------------ #
     await session.start(
         room=ctx.room,
@@ -122,31 +123,35 @@ async def entrypoint(ctx: JobContext):
         room_input_options=RoomInputOptions(participant_identity=participant.identity),
     )
 
-    # Give the audio pipeline a moment to initialise
     await asyncio.sleep(1)
 
-    # Clare's greeting - checks memory for a known name
     user_name = await memory.get_memory("user_name")
-    greeting  = f"Hi {user_name}, I'm Clare. How may I help you?" if user_name else "Hi, I'm Clare. How may I help you?"
-    await session.say(greeting, allow_interruptions=True)
+    greeting  = (
+        f"Hi {user_name}, I'm Clare. How may I help you?"
+        if user_name else
+        "Hi, I'm Clare. How may I help you?"
+    )
+    try:
+        await session.say(greeting, allow_interruptions=True)
+    except RuntimeError:
+        logger.warning("Session closed before greeting could be sent.")
+        return
 
     # ------------------------------------------------------------------ #
-    #  9. Keep alive and clean up when the room closes                    #
+    #  9. Keep alive until room disconnects                              #
     # ------------------------------------------------------------------ #
-    
     disconnect_ev = asyncio.Event()
 
-    def _on_disconnect(*_):
+    def _on_disconnected(*_):
         disconnect_ev.set()
 
-    ctx.room.on("disconnected", _on_disconnect)
+    ctx.room.on("disconnected", _on_disconnected)
 
     try:
         await disconnect_ev.wait()
     finally:
-        await session.stop()
         await memory.end_session()
-        logger.info("Session ended, memory saved, and disconnected from room.")
+        logger.info("Session ended cleanly.")
 
 
 if __name__ == "__main__":

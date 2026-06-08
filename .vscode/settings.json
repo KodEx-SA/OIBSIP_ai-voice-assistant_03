@@ -1,8 +1,12 @@
 {
     "cSpell.words": [
+        "cartesia",
+        "deepgram",
         "dotenv",
+        "groq",
         "Livekit",
         "Navi",
-        "silero"
+        "silero",
+        "supabase"
     ]
 }
