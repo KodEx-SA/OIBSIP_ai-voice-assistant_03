@@ -97,7 +97,8 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         llm=groq.LLM(model="llama-3.3-70b-versatile"),
-        tts=cartesia.TTS(voice="71a7ad14-091d-4441-9aa3-40b6bb81b11f"),  # British female
+        # tts=cartesia.TTS(voice="71a7ad14-091d-4441-9aa3-40b6bb81b11f"),  # British female
+        tts=cartesia.TTS(), # default voice
         vad=silero.VAD.load(),
     )
 
