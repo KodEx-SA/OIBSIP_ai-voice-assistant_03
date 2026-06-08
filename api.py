@@ -51,7 +51,7 @@ class AssistantAgentFunction:
             zone_name = zone.value.replace("_", " ").title()
             message   = f"The temperature in the {zone_name} is {temp}°C."
 
-            logger.info("Temperature check — zone: %s, temp: %s°C", zone.value, temp)
+            logger.info("Temperature check - zone: %s, temp: %s°C", zone.value, temp)
 
             result = {
                 "zone": zone.value,
