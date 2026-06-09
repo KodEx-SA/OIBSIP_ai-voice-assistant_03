@@ -31,4 +31,4 @@ coverage/
 *.ntvs*
 *.ntvs*/
 *.njsproj
-*.njsproj/
+*.njsproj/__pycache__/
