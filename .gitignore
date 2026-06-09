@@ -32,3 +32,4 @@ coverage/
 *.ntvs*/
 *.njsproj
 *.njsproj/__pycache__/
+ai/
