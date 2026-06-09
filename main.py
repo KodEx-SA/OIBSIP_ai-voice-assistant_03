@@ -89,16 +89,15 @@ async def entrypoint(ctx: JobContext):
     # ------------------------------------------------------------------ #
     #  6. Voice pipeline - all free tier                                 #
     #                                                                    #
-    #   STT: Deepgram  - nova-3 model, best accuracy, free $200 credit   #
-    #   LLM: Groq      - llama-3.1-8b-instant, fastest free LLM available #
-    #   TTS: Cartesia  - sonic-english, natural voice, free tier         #
-    #   VAD: Silero    - local, always free                              #
+    #   STT: Deepgram - nova-3 model, best accuracy, free $200 credit    #
+    #   LLM: Groq - llama-3.1-8b-instant, fastest free LLM available     #
+    #   TTS: Cartesia - sonic-english, natural voice, free tier          #
+    #   VAD: Silero - local, always free                                 #
     # ------------------------------------------------------------------ #
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         llm=groq.LLM(model="llama-3.3-70b-versatile"),
-        # tts=cartesia.TTS(voice="71a7ad14-091d-4441-9aa3-40b6bb81b11f"),  # British female
-        tts=cartesia.TTS(), # default voice
+        tts=cartesia.TTS(voice="ac197a78-cec7-4c50-93e5-93bdc1910b11"), # Neutral, natural voice
         vad=silero.VAD.load(),
     )
 
