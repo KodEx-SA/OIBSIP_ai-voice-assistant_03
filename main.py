@@ -9,13 +9,13 @@ import logging
 from dotenv import load_dotenv
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli
 from livekit.agents import Agent, AgentSession, RoomInputOptions
-import livekit.plugins.groq as groq # =============== used for Groq via .with_groq() ===============
+import livekit.plugins.groq as groq  # =============== used for Groq via .with_groq() ===============
 import livekit.plugins.deepgram as deepgram
 import livekit.plugins.cartesia as cartesia
-import livekit.plugins.silero   as silero
+import livekit.plugins.silero as silero
 
 from memory import ClareMemory
-from api    import AssistantAgentFunction
+from api import AssistantAgentFunction
 
 load_dotenv()
 
@@ -33,7 +33,7 @@ async def entrypoint(ctx: JobContext):
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
     # ------------------------------------------------------------------ #
-    #  2. Wait for participant — graceful exit if they leave too early   #
+    #  2. Wait for participant - graceful exit if they leave too early   #
     # ------------------------------------------------------------------ #
     logger.info("Waiting for participant to join room: %s", ctx.room.name)
     try:
@@ -57,9 +57,9 @@ async def entrypoint(ctx: JobContext):
         "You are Clare, a voice assistant created by Ashley (KodEx-SA). "
         "Your interface with users is voice only - keep responses short and natural. "
         "Avoid complex punctuation, long sentences, or lists. Speak conversationally. "
-        "You can check temperatures in various zones. "
+        "You can check temperatures in various zones."
         "You have long-term memory: use 'remember' to store facts the user tells you, "
-        "'recall' to retrieve them, 'forget' to remove them, and 'list_memories' to see all. "
+        "'recall' to retrieve them, 'forget' to remove them, and 'list_memories' to see all."
         "Proactively remember useful things like the user's name, preferences, or anything "
         "they'd expect you to know next time."
     )
@@ -73,9 +73,9 @@ async def entrypoint(ctx: JobContext):
     # ------------------------------------------------------------------ #
     #  5. Tools                                                          #
     # ------------------------------------------------------------------ #
-    agent_function = AssistantAgentFunction(memory=memory)
+    agent_function = AssistantAgentFunction(memory=memory) # =============== custom agent function with access to memory ===============
 
-    agent = Agent(
+    agent = Agent( 
         instructions=instructions,
         tools=[
             agent_function.get_temperature,
@@ -97,7 +97,9 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         llm=groq.LLM(model="llama-3.3-70b-versatile"),
-        tts=cartesia.TTS(voice="ac197a78-cec7-4c50-93e5-93bdc1910b11"), # Neutral, natural voice
+        tts=cartesia.TTS(
+            voice="ac197a78-cec7-4c50-93e5-93bdc1910b11"
+        ),  # Neutral, natural voice
         vad=silero.VAD.load(),
     )
 
@@ -126,10 +128,10 @@ async def entrypoint(ctx: JobContext):
     await asyncio.sleep(1)
 
     user_name = await memory.get_memory("user_name")
-    greeting  = (
+    greeting = (
         f"Hi {user_name}, I'm Clare. How may I help you?"
-        if user_name else
-        "Hi, I'm Clare. How may I help you?"
+        if user_name
+        else "Hi, I'm Clare. How may I help you?"
     )
     try:
         await session.say(greeting, allow_interruptions=True)
