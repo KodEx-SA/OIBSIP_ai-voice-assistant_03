@@ -1,4 +1,4 @@
-# Clare — AI Voice Assistant
+# Clare - AI Voice Assistant
 
 A real-time AI voice assistant built with LiveKit Agents. Clare listens, thinks, speaks, and remembers - powered entirely by free-tier providers.
 
