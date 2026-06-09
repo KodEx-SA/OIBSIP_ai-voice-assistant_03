@@ -1,194 +1,178 @@
-# ai-voice-assistant
+# Clare — AI Voice Assistant
 
-A minimal voice-controlled AI assistant built with LiveKit that can answer questions and check temperature readings across different rooms/zones.
+A real-time AI voice assistant built with LiveKit Agents. Clare listens, thinks, speaks, and remembers - powered entirely by free-tier providers.
 
-## Features
+## Live Stack
 
-- **Voice-to-Voice Communication**: Complete speech-to-text and text-to-speech pipeline
-- **Natural Conversation**: Designed for natural voice interactions with minimal latency
-- **Temperature Monitoring**: Check temperature readings across 5 different zones
-- **Real-time Processing**: Built on LiveKit's real-time communication platform
+| Layer | Provider | Model | Purpose |
+|---|---|---|---|
+| STT | Deepgram | nova-3 | Converts your voice to text |
+| LLM | Groq | llama-3.3-70b-versatile | Processes and generates responses |
+| TTS | Cartesia | Jennifer (ac197a78) | Converts responses back to speech |
+| VAD | Silero | - | Detects when you are speaking |
+| Memory | Supabase | PostgreSQL | Stores sessions, messages, memories |
+| Dashboard | Next.js 15 | - | Real-time mission control UI |
 
 ## Project Structure
 
 ```
-ai-voice-assistant/
-├── ai/                 # Virtual environment
-├── main.py            # Main application entry point
-├── api.py             # Temperature control functions and agent tools
-├── .env               # Environment variables
-└── README.md          # This file
+OIBSIP_ai-voice-assistant_03/
+├── main.py              # Agent entrypoint - voice pipeline wiring
+├── api.py               # Clare's tools - temperature, memory operations
+├── memory.py            # Supabase cloud memory layer
+├── requirements.txt     # Python dependencies
+├── schema/              # Supabase SQL schema
+├── list_voices.py       # Utility: list available Cartesia voices
+├── dashboard/           # Mission Control - Next.js real-time dashboard
+│   └── src/
+│       ├── app/         # Next.js app router
+│       ├── components/  # SessionsPanel, ConversationPanel, ToolLogPanel, MemoriesPanel
+│       └── lib/         # Supabase client + TypeScript types
+├── ai/                  # Python virtual environment
+└── .env                 # API keys (never commit this)
 ```
 
 ## Prerequisites
 
-- Python
-- LiveKit account and API credentials
-- OpenAI API key
+- Python 3.11+
+- Node.js 18+ (for dashboard)
+- Accounts and API keys for:
+  - [LiveKit Cloud](https://livekit.io) - room infrastructure
+  - [Deepgram](https://deepgram.com) - STT (free $200 credit)
+  - [Groq](https://console.groq.com) - LLM (free tier)
+  - [Cartesia](https://cartesia.ai) - TTS (free tier)
+  - [Supabase](https://supabase.com) - memory database (free tier)
 
 ## Setup
 
-### 1. Clone and Navigate
+### 1. Clone and activate virtual environment
+
 ```bash
-git clone https://github.com/Ashley-Programmer/ai-voice-assistant
-cd ai-voice-assistant
+git clone https://github.com/KodEx-SA/ai-voice-assistant
+cd OIBSIP_ai-voice-assistant_03
+source ai/bin/activate
 ```
 
-### 2. Activate Virtual Environment
+### 2. Install Python dependencies
+
 ```bash
-source ai/bin/activate  # On macOS/Linux
-# or
-ai\Scripts\activate     # On Windows
+pip install -r requirements.txt
 ```
 
-### 3. Install Dependencies
-```bash
-pip install livekit-agents
-pip install livekit-plugins-openai
-pip install livekit-plugins-silero
-pip install python-dotenv
-```
+### 3. Set up Supabase
 
-### 4. Environment Configuration
-Create a `.env` file in the root directory:
+Create a project at [supabase.com](https://supabase.com), then run the contents of `schema/schema.sql` in the SQL Editor. Disable RLS on all four tables or add permissive policies for the anon role.
+
+### 4. Configure environment variables
+
+Create a `.env` file in the project root:
+
 ```env
-LIVEKIT_API_KEY=your_livekit_api_key
-LIVEKIT_API_SECRET=your_livekit_api_secret
-LIVEKIT_URL=your_livekit_server_url
-OPENAI_API_KEY=your_openai_api_key
+# LiveKit
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your-api-key
+LIVEKIT_API_SECRET=your-api-secret
+
+# AI providers
+DEEPGRAM_API_KEY=your-deepgram-key
+GROQ_API_KEY=your-groq-key
+CARTESIA_API_KEY=your-cartesia-key
+
+# Memory
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-public-key
 ```
 
-## Usage
+### 5. Start Clare
 
-### Starting the Assistant
 ```bash
-python main.py
+python3 main.py start
 ```
 
-The assistant will:
-1. Connect to your LiveKit room
-2. Initialize speech processing components
-3. Greet you as "Navi" and wait for voice commands
+Then open your [LiveKit console](https://cloud.livekit.io) and connect to the room.
 
-### Available Commands
+### 6. Start the dashboard (optional)
 
-**Temperature Queries:**
-- "What's the temperature in the living room?"
-- "Check bedroom temperature"
-- "How warm is the kitchen?"
-- "Tell me the office temperature"
-- "What's the bathroom temperature?"
+```bash
+cd dashboard
+cp .env.local.example .env.local   # fill in your Supabase keys
+npm install
+npm run dev                         # runs on localhost:3001
+```
 
-**Supported Zones:**
-- Living Room (25°C)
-- Bedroom (22°C)  
-- Kitchen (20°C)
-- Bathroom (30°C)
-- Office (21°C)
+## Features
 
-## Architecture
+### Voice Pipeline
 
-### Core Components
+Clare processes voice in real time through four stages:
 
-**main.py** - Application entry point
-- Handles LiveKit connection and room management
-- Configures the AI agent with personality and instructions
-- Manages the complete voice processing pipeline
+```
+You speak -> Deepgram (STT) -> Groq (LLM) -> Cartesia (TTS) -> Clare speaks
+                ↑ also running continuously
+            Silero VAD (detects speech)
+```
 
-**api.py** - Function tools and business logic
-- `TemperatureZone` enum defining available rooms
-- `AssistantAgentFunction` class with temperature checking capabilities
-- Function decorators for LiveKit agent integration
+### Cloud Memory
 
-### Voice Processing Pipeline
+Every session is stored in Supabase. Clare remembers:
 
-1. **Speech-to-Text (STT)**: OpenAI Whisper converts voice to text
-2. **Language Model (LLM)**: OpenAI GPT processes and generates responses
-3. **Text-to-Speech (TTS)**: OpenAI TTS converts responses back to speech
-4. **Voice Activity Detection (VAD)**: Silero VAD detects when users are speaking
+- **Session history** - every exchange within a conversation
+- **Long-term memories** - facts stored across sessions (your name, preferences, etc.)
+- **Tool executions** - every tool call with arguments, results, and timing
 
-## Configuration
+Clare proactively stores useful information and recalls it in future sessions.
 
-### Agent Personality
-The assistant is configured as "Clare" (though introduces itself as "Navi") with these characteristics:
-- Minimal and concise responses
-- Voice-optimized communication
-- Natural conversation flow
-- Specialized in temperature monitoring
+### Tools Clare Can Use
 
-### Audio Settings
-- Audio-only connection (no video)
-- Interruption support for natural conversation
-- Real-time voice activity detection
+| Tool | What it does |
+|---|---|
+| `get_temperature` | Returns the temperature for a named zone |
+| `remember` | Stores a key/value fact in long-term memory |
+| `recall` | Retrieves a stored fact by key |
+| `forget` | Deletes a stored fact permanently |
+| `list_memories` | Returns all stored facts |
 
-## Development
+### Mission Control Dashboard
 
-### Adding New Functions
-To add new capabilities:
+A real-time Next.js dashboard at `localhost:3001` showing:
 
-1. Create a new method in `AssistantAgentFunction`
-2. Use the `@function_tool()` decorator
-3. Include proper type hints and docstrings
-4. Handle speech responses with `await context.session.say()`
+- Live and historical sessions with duration
+- Full conversation transcripts per session
+- Tool execution log with arguments, results, and timing
+- Long-term memory manager with inline delete
 
-### Extending Temperature Zones
-Modify the `_temperature_zones` dictionary in `api.py`:
+All panels update in real time via Supabase postgres_changes subscriptions.
+
+## Changing Clare's Voice
+
+List voices available on your Cartesia account:
+
+```bash
+python3 list_voices.py
+```
+
+Then update `main.py`:
+
 ```python
-self._temperature_zones = {
-    TemperatureZone.LIVING_ROOM: 25,
-    # Add new zones here
-}
+tts=cartesia.TTS(voice="your-voice-id-here"),
 ```
 
-## Troubleshooting
+## Architecture Notes
 
-### Common Issues
+- `main.py` wires the pipeline together and manages the session lifecycle
+- `api.py` defines every tool Clare can call, each decorated with `@function_tool()`
+- `memory.py` is a pure data layer — it only reads and writes to Supabase
+- The dashboard is completely separate from the agent and only reads from Supabase
 
-**Connection Problems:**
-- Verify LiveKit credentials in `.env`
-- Check network connectivity
-- Ensure LiveKit server is accessible
+## Roadmap
 
-**Audio Issues:**
-- Check microphone permissions
-- Verify audio device settings
-- Test with different audio inputs
+- [x] Phase 1 — Cloud memory (Supabase)
+- [x] Phase 2 — Mission Control dashboard
+- [ ] Phase 3 — Web intelligence (search + browser)
+- [ ] Phase 4 — Skill system (dynamic tool loading)
+- [ ] Phase 5 — MCP/API integration
+- [ ] Phase 6 — Auto-learning pipeline
 
-**API Errors:**
-- Validate OpenAI API key
-- Check API quota and billing
-- Review error logs for specific issues
+## Built by
 
-### Logging
-The application includes logging for temperature control functions. Check console output for debugging information.
-
-## Limitations
-
-- Temperature data is currently mock/static values
-- Limited to predefined room zones
-- Requires stable internet connection for all AI processing
-- Voice processing latency depends on OpenAI API response times
-
-## Future Enhancements
-
-- [ ] Integration with real IoT temperature sensors
-- [ ] Additional smart home controls (lights, HVAC)
-- [ ] Multi-language support
-- [ ] Custom wake word detection
-- [ ] Conversation history and context memory
-- [ ] Visual interface for temperature dashboards
-
-## License
-
-[Add your license information here]
-
-## Contributing
-
-[Add contribution guidelines here]
-
-## Support
-
-For issues related to:
-- **LiveKit**: Check [LiveKit documentation](https://docs.livekit.io/)
-- **OpenAI**: Review [OpenAI API documentation](https://platform.openai.com/docs)
-- **Project-specific**: [Add your contact/issue tracking info]
+Ashley Koketso Motsie — [KodEx-SA](https://github.com/KodEx-SA)
