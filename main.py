@@ -1,5 +1,5 @@
 """
-main.py — Clare voice assistant entrypoint
+main.py - Clare voice assistant entrypoint
 Phase 3: Web intelligence added (Brave + SerpAPI + Chroma knowledge base)
 """
 
@@ -10,13 +10,13 @@ from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli
 from livekit.agents import Agent, AgentSession, RoomInputOptions
 import livekit.plugins.deepgram as deepgram
 import livekit.plugins.cartesia as cartesia
-import livekit.plugins.silero   as silero
-import livekit.plugins.groq     as groq
+import livekit.plugins.silero as silero
+import livekit.plugins.groq as groq
 
-from memory     import ClareMemory
+from memory import ClareMemory
 from web_search import WebSearcher
-from knowledge  import KnowledgeBase
-from api        import AssistantAgentFunction
+from knowledge import KnowledgeBase
+from api import AssistantAgentFunction
 
 load_dotenv()
 
@@ -29,56 +29,57 @@ logger = logging.getLogger("clare.main")
 
 async def entrypoint(ctx: JobContext):
     # ------------------------------------------------------------------ #
-    #  1. Connect to LiveKit room                                          #
+    #  1. Connect to LiveKit room                                        #
     # ------------------------------------------------------------------ #
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
     # ------------------------------------------------------------------ #
-    #  2. Wait for participant                                             #
+    #  2. Wait for participant                                           #
     # ------------------------------------------------------------------ #
     logger.info("Waiting for participant to join room: %s", ctx.room.name)
     try:
         participant = await ctx.wait_for_participant()
         logger.info("Participant joined: %s", participant.identity)
     except RuntimeError as e:
-        logger.warning("Room closed before participant joined — %s", e)
+        logger.warning("Room closed before participant joined - %s", e)
         return
 
     # ------------------------------------------------------------------ #
-    #  3. Initialise memory                                                #
+    #  3. Initialise memory                                              #
     # ------------------------------------------------------------------ #
     memory = ClareMemory()
     await memory.start_session(room_id=ctx.room.name)
     memory_context = await memory.build_memory_context()
 
     # ------------------------------------------------------------------ #
-    #  4. Initialise web intelligence (Phase 3)                           #
+    #  4. Initialise web intelligence (Phase 3)                          #
     # ------------------------------------------------------------------ #
-    searcher  = WebSearcher()
+    searcher = WebSearcher()
     knowledge = KnowledgeBase()
     await knowledge.initialise()
 
     # ------------------------------------------------------------------ #
-    #  5. System instructions                                              #
+    #  5. System instructions                                            #
     # ------------------------------------------------------------------ #
     base_instructions = (
-        "You are Clare, a voice assistant created by Ashley (KodEx-SA). "
-        "Your interface with users is voice only — keep responses short and natural. "
+        "You are Clare, a voice assistant created by Ashley K Motsie ( K for Koketso in full). "
+        "KodEx-SA is his Github profile. "
+        "He was born in South Africa and is based in North West, born in the year of 2000"
+        "He is a software engineer, AI enthusiast, and the creator of you - Clare. "
+        "Your interface with users is voice only keep responses short and natural. "
         "Avoid complex punctuation, long sentences, or lists. Speak conversationally. "
-
         "You have access to the web and a personal knowledge base. "
         "When asked about current events, news, prices, people, or anything you are "
-        "uncertain about — use web_search immediately. Don't say you can't access "
+        "uncertain about - use web_search immediately. Don't say you can't access "
         "the internet. You can, and should. "
-        "Before searching the web, always check recall_knowledge first — you may "
+        "Before searching the web, always check recall_knowledge first - you may "
         "already have learned about it. "
         "When asked to learn or research a topic, use learn_about to search, read, "
         "and store the knowledge permanently. "
-
         "You also have long-term memory: use remember to store facts, recall to "
         "retrieve them, forget to remove them, and list_memories to see all. "
         "You can check temperatures in various zones. "
-        "Proactively remember useful things like the user's name and preferences."
+        "Proactively remember useful things like the user's name, age, gender and preferences."
     )
 
     instructions = (
@@ -88,7 +89,7 @@ async def entrypoint(ctx: JobContext):
     )
 
     # ------------------------------------------------------------------ #
-    #  6. Wire up tools                                                    #
+    #  6. Wire up tools                                                  #
     # ------------------------------------------------------------------ #
     agent_function = AssistantAgentFunction(
         memory=memory,
@@ -116,7 +117,7 @@ async def entrypoint(ctx: JobContext):
     )
 
     # ------------------------------------------------------------------ #
-    #  7. Voice pipeline                                                   #
+    #  7. Voice pipeline                                                 #
     # ------------------------------------------------------------------ #
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
@@ -126,7 +127,7 @@ async def entrypoint(ctx: JobContext):
     )
 
     # ------------------------------------------------------------------ #
-    #  8. Save conversation to memory                                      #
+    #  8. Save conversation to memory                                    #
     # ------------------------------------------------------------------ #
     @session.on("user_input_transcribed")
     def on_user_spoke(event):
@@ -139,7 +140,7 @@ async def entrypoint(ctx: JobContext):
             asyncio.ensure_future(memory.save_message("assistant", event.transcript))
 
     # ------------------------------------------------------------------ #
-    #  9. Start session                                                    #
+    #  9. Start session                                                  #
     # ------------------------------------------------------------------ #
     await session.start(
         room=ctx.room,
@@ -150,10 +151,10 @@ async def entrypoint(ctx: JobContext):
     await asyncio.sleep(1)
 
     user_name = await memory.get_memory("user_name")
-    greeting  = (
+    greeting = (
         f"Hi {user_name}, I'm Clare. How may I help you?"
-        if user_name else
-        "Hi, I'm Clare. How may I help you?"
+        if user_name
+        else "Hi, I'm Clare. How may I help you?"
     )
 
     try:
@@ -163,7 +164,7 @@ async def entrypoint(ctx: JobContext):
         return
 
     # ------------------------------------------------------------------ #
-    #  10. Keep alive until room disconnects                               #
+    #  10. Keep alive until room disconnects                             #
     # ------------------------------------------------------------------ #
     disconnect_ev = asyncio.Event()
 
