@@ -11,13 +11,15 @@ from datetime import datetime, timezone
 from functools import partial
 
 import chromadb
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+
+# from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 
 logger = logging.getLogger("clare.knowledge")
 logger.setLevel(logging.INFO)
 
-PERSIST_DIR    = os.getenv("KNOWLEDGE_STORE_DIR", "./knowledge_store")
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"   # ~90MB, downloads once on first run
+PERSIST_DIR = os.getenv("KNOWLEDGE_STORE_DIR", "./knowledge_store")
+# EMBEDDING_MODEL = "all-MiniLM-L6-v2"   # ~90MB, downloads once on first run
 COLLECTION_NAME = "clare_knowledge"
 
 
@@ -36,15 +38,15 @@ class KnowledgeBase:
     """
 
     def __init__(self):
-        self._client     = None
+        self._client = None
         self._collection = None
-        self._embed_fn   = None
+        self._embed_fn = None
 
     async def initialise(self) -> None:
         """Set up the Chroma client and collection. Call once at startup."""
         loop = asyncio.get_event_loop()
 
-        # Chroma and sentence-transformers are synchronous — run in thread pool
+        # Chroma and sentence-transformers are synchronous - run in thread pool
         await loop.run_in_executor(None, self._setup)
         logger.info(
             "KnowledgeBase initialised — store: %s, documents: %d",
@@ -56,9 +58,11 @@ class KnowledgeBase:
         """Synchronous setup — runs in thread pool."""
         os.makedirs(PERSIST_DIR, exist_ok=True)
 
-        self._embed_fn = SentenceTransformerEmbeddingFunction(
-            model_name=EMBEDDING_MODEL
-        )
+        # self._embed_fn = SentenceTransformerEmbeddingFunction(
+        #     model_name=EMBEDDING_MODEL
+        # )
+
+        self._embed_fn = ONNXMiniLM_L6_V2()
 
         self._client = chromadb.PersistentClient(path=PERSIST_DIR)
 
@@ -74,9 +78,9 @@ class KnowledgeBase:
 
     async def store(
         self,
-        content:  str,
-        source:   str,
-        topic:    str,
+        content: str,
+        source: str,
+        topic: str,
         chunk_size: int = 500,
     ) -> int:
         """
@@ -92,12 +96,12 @@ class KnowledgeBase:
         if not chunks:
             return 0
 
-        now      = datetime.now(timezone.utc).isoformat()
-        ids      = [f"{topic}_{i}_{now}" for i in range(len(chunks))]
-        metas    = [
+        now = datetime.now(timezone.utc).isoformat()
+        ids = [f"{topic}_{i}_{now}" for i in range(len(chunks))]
+        metas = [
             {
-                "source":    source,
-                "topic":     topic,
+                "source": source,
+                "topic": topic,
                 "chunk_idx": i,
                 "stored_at": now,
             }
@@ -110,7 +114,9 @@ class KnowledgeBase:
             partial(self._collection.add, documents=chunks, ids=ids, metadatas=metas),
         )
 
-        logger.info("Stored %d chunks — topic: %s, source: %s", len(chunks), topic, source)
+        logger.info(
+            "Stored %d chunks — topic: %s, source: %s", len(chunks), topic, source
+        )
         return len(chunks)
 
     # ------------------------------------------------------------------ #
@@ -123,7 +129,7 @@ class KnowledgeBase:
 
         Returns a list of dicts with keys: content, source, topic, distance
         """
-        loop    = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         results = await loop.run_in_executor(
             None,
             partial(
@@ -134,19 +140,23 @@ class KnowledgeBase:
         )
 
         output = []
-        docs       = results.get("documents", [[]])[0]
-        metas      = results.get("metadatas", [[]])[0]
-        distances  = results.get("distances",  [[]])[0]
+        docs = results.get("documents", [[]])[0]
+        metas = results.get("metadatas", [[]])[0]
+        distances = results.get("distances", [[]])[0]
 
         for doc, meta, dist in zip(docs, metas, distances):
-            output.append({
-                "content":  doc,
-                "source":   meta.get("source", ""),
-                "topic":    meta.get("topic", ""),
-                "distance": round(dist, 4),
-            })
+            output.append(
+                {
+                    "content": doc,
+                    "source": meta.get("source", ""),
+                    "topic": meta.get("topic", ""),
+                    "distance": round(dist, 4),
+                }
+            )
 
-        logger.info("Knowledge query — question: %s, results: %d", question, len(output))
+        logger.info(
+            "Knowledge query — question: %s, results: %d", question, len(output)
+        )
         return output
 
     # ------------------------------------------------------------------ #
@@ -155,7 +165,7 @@ class KnowledgeBase:
 
     async def list_topics(self) -> list[str]:
         """Return all unique topics stored in the knowledge base."""
-        loop   = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
             partial(self._collection.get, include=["metadatas"]),
@@ -169,10 +179,10 @@ class KnowledgeBase:
 
     def _chunk_text(self, text: str, chunk_size: int) -> list[str]:
         """Split text into overlapping chunks by word count."""
-        words    = text.split()
-        overlap  = chunk_size // 5   # 20% overlap between chunks
-        chunks   = []
-        i        = 0
+        words = text.split()
+        overlap = chunk_size // 5  # 20% overlap between chunks
+        chunks = []
+        i = 0
 
         while i < len(words):
             chunk = " ".join(words[i : i + chunk_size])
