@@ -1,5 +1,5 @@
 """
-web_search.py — Clare's web intelligence layer
+web_search.py - Clare's web intelligence layer
 Handles search via Brave API (primary) and SerpAPI (fallback),
 plus page content extraction via httpx + BeautifulSoup.
 """
@@ -12,15 +12,16 @@ from bs4 import BeautifulSoup
 logger = logging.getLogger("clare.web_search")
 logger.setLevel(logging.INFO)
 
-# ── Constants ────────────────────────────────────────────────────────────────
+# ============================================ Constants ============================================
 
-BRAVE_URL  = "https://api.search.brave.com/res/v1/web/search"
-SERP_URL   = "https://serpapi.com/search"
-PAGE_TIMEOUT  = 10  # seconds
+BRAVE_URL = "https://api.search.brave.com/res/v1/web/search"
+SERP_URL = "https://serpapi.com/search"
+PAGE_TIMEOUT = 10  # seconds
 MAX_PAGE_CHARS = 8000  # truncate long pages to keep within LLM context
 
 
-# ── WebSearcher ──────────────────────────────────────────────────────────────
+# ============================================ WebSearcher ============================================
+
 
 class WebSearcher:
     """
@@ -35,7 +36,7 @@ class WebSearcher:
 
     def __init__(self):
         self.brave_key = os.getenv("BRAVE_API_KEY")
-        self.serp_key  = os.getenv("SERPAPI_KEY")
+        self.serp_key = os.getenv("SERPAPI_KEY")
 
         if not self.brave_key and not self.serp_key:
             raise EnvironmentError(
@@ -48,7 +49,7 @@ class WebSearcher:
             logger.info("SerpAPI configured.")
 
     # ------------------------------------------------------------------ #
-    #  Public interface                                                     #
+    #  Public interface                                                  #
     # ------------------------------------------------------------------ #
 
     async def search(self, query: str, count: int = 5) -> list[dict]:
@@ -102,7 +103,7 @@ class WebSearcher:
             return f"[Could not read page: {e}]"
 
     # ------------------------------------------------------------------ #
-    #  Private - provider implementations                                  #
+    #  Private - provider implementations                                #
     # ------------------------------------------------------------------ #
 
     async def _brave_search(self, query: str, count: int) -> list[dict]:
@@ -110,9 +111,9 @@ class WebSearcher:
             response = await client.get(
                 BRAVE_URL,
                 headers={
-                    "Accept":                "application/json",
-                    "Accept-Encoding":       "gzip",
-                    "X-Subscription-Token":  self.brave_key,
+                    "Accept": "application/json",
+                    "Accept-Encoding": "gzip",
+                    "X-Subscription-Token": self.brave_key,
                 },
                 params={"q": query, "count": count},
             )
@@ -121,12 +122,14 @@ class WebSearcher:
 
         results = []
         for item in data.get("web", {}).get("results", []):
-            results.append({
-                "title":   item.get("title", ""),
-                "url":     item.get("url", ""),
-                "snippet": item.get("description", ""),
-                "source":  "brave",
-            })
+            results.append(
+                {
+                    "title": item.get("title", ""),
+                    "url": item.get("url", ""),
+                    "snippet": item.get("description", ""),
+                    "source": "brave",
+                }
+            )
         return results
 
     async def _serp_search(self, query: str, count: int) -> list[dict]:
@@ -134,10 +137,10 @@ class WebSearcher:
             response = await client.get(
                 SERP_URL,
                 params={
-                    "q":       query,
+                    "q": query,
                     "api_key": self.serp_key,
-                    "engine":  "google",
-                    "num":     count,
+                    "engine": "google",
+                    "num": count,
                 },
             )
             response.raise_for_status()
@@ -145,16 +148,18 @@ class WebSearcher:
 
         results = []
         for item in data.get("organic_results", []):
-            results.append({
-                "title":   item.get("title", ""),
-                "url":     item.get("link", ""),
-                "snippet": item.get("snippet", ""),
-                "source":  "serpapi",
-            })
+            results.append(
+                {
+                    "title": item.get("title", ""),
+                    "url": item.get("link", ""),
+                    "snippet": item.get("snippet", ""),
+                    "source": "serpapi",
+                }
+            )
         return results
 
     # ------------------------------------------------------------------ #
-    #  Private — page text extraction                                      #
+    #  Private — page text extraction                                    #
     # ------------------------------------------------------------------ #
 
     def _extract_text(self, html: str) -> str:
@@ -162,8 +167,9 @@ class WebSearcher:
         soup = BeautifulSoup(html, "html.parser")
 
         # Remove noise elements
-        for tag in soup(["script", "style", "nav", "footer",
-                          "header", "aside", "form", "iframe"]):
+        for tag in soup(
+            ["script", "style", "nav", "footer", "header", "aside", "form", "iframe"]
+        ):
             tag.decompose()
 
         # Try to find main content area first
@@ -178,7 +184,7 @@ class WebSearcher:
         text = (main or soup).get_text(separator="\n", strip=True)
 
         # Collapse multiple blank lines
-        lines    = [line for line in text.splitlines() if line.strip()]
-        cleaned  = "\n".join(lines)
+        lines = [line for line in text.splitlines() if line.strip()]
+        cleaned = "\n".join(lines)
 
         return cleaned[:MAX_PAGE_CHARS]

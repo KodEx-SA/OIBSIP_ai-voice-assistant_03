@@ -49,7 +49,7 @@ class KnowledgeBase:
         # Chroma and sentence-transformers are synchronous - run in thread pool
         await loop.run_in_executor(None, self._setup)
         logger.info(
-            "KnowledgeBase initialised — store: %s, documents: %d",
+            "KnowledgeBase initialised - store: %s, documents: %d",
             PERSIST_DIR,
             self._collection.count(),
         )
@@ -73,16 +73,10 @@ class KnowledgeBase:
         )
 
     # ------------------------------------------------------------------ #
-    #  Store                                                               #
+    #  Store                                                             #
     # ------------------------------------------------------------------ #
 
-    async def store(
-        self,
-        content: str,
-        source: str,
-        topic: str,
-        chunk_size: int = 500,
-    ) -> int:
+    async def store(self, content: str, source: str, topic: str, chunk_size: int = 500, ) -> int:
         """
         Store content in the knowledge base.
         Long content is chunked so it fits within embedding limits.
@@ -115,12 +109,12 @@ class KnowledgeBase:
         )
 
         logger.info(
-            "Stored %d chunks — topic: %s, source: %s", len(chunks), topic, source
+            "Stored %d chunks - topic: %s, source: %s", len(chunks), topic, source
         )
         return len(chunks)
 
     # ------------------------------------------------------------------ #
-    #  Query                                                               #
+    #  Query                                                             #
     # ------------------------------------------------------------------ #
 
     async def query(self, question: str, n_results: int = 5) -> list[dict]:
@@ -155,12 +149,12 @@ class KnowledgeBase:
             )
 
         logger.info(
-            "Knowledge query — question: %s, results: %d", question, len(output)
+            "Knowledge query - question: %s, results: %d", question, len(output)
         )
         return output
 
     # ------------------------------------------------------------------ #
-    #  Utilities                                                           #
+    #  Utilities                                                         #
     # ------------------------------------------------------------------ #
 
     async def list_topics(self) -> list[str]:
