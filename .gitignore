@@ -33,4 +33,4 @@ coverage/
 *.njsproj
 *.njsproj/__pycache__/
 ai/
-NOTES.md
+# NOTES.md
