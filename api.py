@@ -1,5 +1,5 @@
 """
-api.py — Clare's tool functions
+api.py - Clare's tool functions
 Phase 1: temperature control + memory tools
 Phase 3: web search + page reading + knowledge base
 """
@@ -8,9 +8,9 @@ import enum
 import time
 import logging
 from livekit.agents import function_tool, RunContext
-from memory     import ClareMemory
+from memory import ClareMemory
 from web_search import WebSearcher
-from knowledge  import KnowledgeBase
+from knowledge import KnowledgeBase
 
 logger = logging.getLogger("clare.api")
 logger.setLevel(logging.INFO)
@@ -18,29 +18,29 @@ logger.setLevel(logging.INFO)
 
 class TemperatureZone(enum.Enum):
     LIVING_ROOM = "living_room"
-    BEDROOM     = "bedroom"
-    KITCHEN     = "kitchen"
-    BATHROOM    = "bathroom"
-    OFFICE      = "office"
+    BEDROOM = "bedroom"
+    KITCHEN = "kitchen"
+    BATHROOM = "bathroom"
+    OFFICE = "office"
 
 
 class AssistantAgentFunction:
     def __init__(self, memory: ClareMemory, searcher: WebSearcher, knowledge: KnowledgeBase) -> None:
         super().__init__()
-        self.memory    = memory
-        self.searcher  = searcher
+        self.memory = memory
+        self.searcher = searcher
         self.knowledge = knowledge
 
         self._temperature_zones = {
             TemperatureZone.LIVING_ROOM: 25,
-            TemperatureZone.BEDROOM:     22,
-            TemperatureZone.KITCHEN:     20,
-            TemperatureZone.BATHROOM:    30,
-            TemperatureZone.OFFICE:      21,
+            TemperatureZone.BEDROOM: 22,
+            TemperatureZone.KITCHEN: 20,
+            TemperatureZone.BATHROOM: 30,
+            TemperatureZone.OFFICE: 21,
         }
 
     # ================================================================== #
-    #  Temperature                                                         #
+    #  Temperature                                                       #
     # ================================================================== #
 
     @function_tool()
@@ -52,25 +52,31 @@ class AssistantAgentFunction:
         """
         start = time.monotonic()
         try:
-            temp      = self._temperature_zones[zone]
+            temp = self._temperature_zones[zone]
             zone_name = zone.value.replace("_", " ").title()
-            message   = f"The temperature in the {zone_name} is {temp}°C."
-            result    = {"zone": zone.value, "temperature_celsius": temp, "message": message}
-            status    = "success"
+            message = f"The temperature in the {zone_name} is {temp}°C."
+            result = {
+                "zone": zone.value,
+                "temperature_celsius": temp,
+                "message": message,
+            }
+            status = "success"
         except KeyError:
             error_msg = f"No temperature data for {zone.value.replace('_', ' ')}."
-            result    = {"error": error_msg}
-            status    = "error"
+            result = {"error": error_msg}
+            status = "error"
 
         await self.memory.log_tool_execution(
-            tool_name="get_temperature", arguments={"zone": zone.value},
-            result=result, status=status,
+            tool_name="get_temperature",
+            arguments={"zone": zone.value},
+            result=result,
+            status=status,
             duration_ms=int((time.monotonic() - start) * 1000),
         )
         return result
 
     # ================================================================== #
-    #  Memory tools                                                        #
+    #  Memory tools                                                      #
     # ================================================================== #
 
     @function_tool()
@@ -85,8 +91,10 @@ class AssistantAgentFunction:
         await self.memory.save_memory(key, information)
         result = {"status": "remembered", "key": key, "information": information}
         await self.memory.log_tool_execution(
-            tool_name="remember", arguments={"key": key, "information": information},
-            result=result, status="success",
+            tool_name="remember",
+            arguments={"key": key, "information": information},
+            result=result,
+            status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
         )
         return result
@@ -98,16 +106,22 @@ class AssistantAgentFunction:
         Args:
             key: The identifier of the memory to retrieve
         """
-        start   = time.monotonic()
+        start = time.monotonic()
         content = await self.memory.get_memory(key)
-        result  = (
+        result = (
             {"key": key, "content": content, "found": True}
-            if content else
-            {"key": key, "found": False, "message": f"No memory stored for '{key}'."}
+            if content
+            else {
+                "key": key,
+                "found": False,
+                "message": f"No memory stored for '{key}'.",
+            }
         )
         await self.memory.log_tool_execution(
-            tool_name="recall", arguments={"key": key},
-            result=result, status="success",
+            tool_name="recall",
+            arguments={"key": key},
+            result=result,
+            status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
         )
         return result
@@ -119,12 +133,15 @@ class AssistantAgentFunction:
         Args:
             key: The identifier of the memory to delete
         """
-        start   = time.monotonic()
+        start = time.monotonic()
         deleted = await self.memory.delete_memory(key)
-        result  = {"key": key, "deleted": deleted}
+        result = {"key": key, "deleted": deleted}
+
         await self.memory.log_tool_execution(
-            tool_name="forget", arguments={"key": key},
-            result=result, status="success",
+            tool_name="forget",
+            arguments={"key": key},
+            result=result,
+            status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
         )
         return result
@@ -132,21 +149,24 @@ class AssistantAgentFunction:
     @function_tool()
     async def list_memories(self, context: RunContext):
         """List all information stored in long-term memory."""
-        start    = time.monotonic()
+        start = time.monotonic()
         memories = await self.memory.get_all_memories()
-        result   = {
-            "count":    len(memories),
+        result = {
+            "count": len(memories),
             "memories": [{"key": m["key"], "content": m["content"]} for m in memories],
         }
+
         await self.memory.log_tool_execution(
-            tool_name="list_memories", arguments={},
-            result=result, status="success",
+            tool_name="list_memories",
+            arguments={},
+            result=result,
+            status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
         )
         return result
 
     # ================================================================== #
-    #  Web intelligence tools (Phase 3)                                    #
+    #  Web intelligence tools (Phase 3)                                  #
     # ================================================================== #
 
     @function_tool()
@@ -158,7 +178,7 @@ class AssistantAgentFunction:
         Args:
             query: The search query — be specific for better results
         """
-        start   = time.monotonic()
+        start = time.monotonic()
         results = await self.searcher.search(query, count=5)
 
         if not results:
@@ -166,15 +186,16 @@ class AssistantAgentFunction:
             status = "error"
         else:
             result = {
-                "query":   query,
-                "found":   True,
-                "count":   len(results),
+                "query": query,
+                "found": True,
+                "count": len(results),
                 "results": results,
             }
             status = "success"
 
         await self.memory.log_tool_execution(
-            tool_name="web_search", arguments={"query": query},
+            tool_name="web_search",
+            arguments={"query": query},
             result={"query": query, "count": len(results), "status": status},
             status=status,
             duration_ms=int((time.monotonic() - start) * 1000),
@@ -190,12 +211,13 @@ class AssistantAgentFunction:
         Args:
             url: The full URL of the page to read (must start with https://)
         """
-        start   = time.monotonic()
+        start = time.monotonic()
         content = await self.searcher.read_page(url)
-        result  = {"url": url, "content": content, "chars": len(content)}
+        result = {"url": url, "content": content, "chars": len(content)}
 
         await self.memory.log_tool_execution(
-            tool_name="read_webpage", arguments={"url": url},
+            tool_name="read_webpage",
+            arguments={"url": url},
             result={"url": url, "chars": len(content)},
             status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
@@ -216,14 +238,18 @@ class AssistantAgentFunction:
         # Search
         results = await self.searcher.search(topic, count=3)
         if not results:
-            return {"topic": topic, "learned": False, "message": "No search results found."}
+            return {
+                "topic": topic,
+                "learned": False,
+                "message": "No search results found.",
+            }
 
         # Read and store top results
         chunks_stored = 0
-        sources_read  = []
+        sources_read = []
 
         for item in results[:3]:
-            url     = item.get("url", "")
+            url = item.get("url", "")
             snippet = item.get("snippet", "")
 
             # Always store the snippet — fast and reliable
@@ -244,19 +270,26 @@ class AssistantAgentFunction:
                     sources_read.append(url)
 
         result = {
-            "topic":         topic,
-            "learned":       True,
-            "sources_read":  len(sources_read),
+            "topic": topic,
+            "learned": True,
+            "sources_read": len(sources_read),
             "chunks_stored": chunks_stored,
-            "sources":       sources_read,
+            "sources": sources_read,
         }
 
         await self.memory.log_tool_execution(
-            tool_name="learn_about", arguments={"topic": topic},
-            result=result, status="success",
+            tool_name="learn_about",
+            arguments={"topic": topic},
+            result=result,
+            status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
         )
-        logger.info("Learned about '%s' — %d chunks from %d sources", topic, chunks_stored, len(sources_read))
+        logger.info(
+            "Learned about '%s' — %d chunks from %d sources",
+            topic,
+            chunks_stored,
+            len(sources_read),
+        )
         return result
 
     @function_tool()
@@ -268,21 +301,25 @@ class AssistantAgentFunction:
         Args:
             question: The question or topic to search your knowledge base for
         """
-        start   = time.monotonic()
+        start = time.monotonic()
         results = await self.knowledge.query(question, n_results=5)
 
         if not results:
-            result = {"question": question, "found": False, "message": "Nothing in knowledge base yet."}
+            result = {
+                "question": question,
+                "found": False,
+                "message": "Nothing in knowledge base yet.",
+            }
         else:
             result = {
                 "question": question,
-                "found":    True,
-                "count":    len(results),
-                "results":  [
+                "found": True,
+                "count": len(results),
+                "results": [
                     {
-                        "content":  r["content"][:500],  # truncate for voice context
-                        "source":   r["source"],
-                        "topic":    r["topic"],
+                        "content": r["content"][:500],  # truncate for voice context
+                        "source": r["source"],
+                        "topic": r["topic"],
                         "distance": r["distance"],
                     }
                     for r in results
@@ -290,8 +327,13 @@ class AssistantAgentFunction:
             }
 
         await self.memory.log_tool_execution(
-            tool_name="recall_knowledge", arguments={"question": question},
-            result={"question": question, "found": result.get("found"), "count": result.get("count", 0)},
+            tool_name="recall_knowledge",
+            arguments={"question": question},
+            result={
+                "question": question,
+                "found": result.get("found"),
+                "count": result.get("count", 0),
+            },
             status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
         )
@@ -300,14 +342,16 @@ class AssistantAgentFunction:
     @function_tool()
     async def list_knowledge_topics(self, context: RunContext):
         """List all topics Clare has learned about and stored in her knowledge base."""
-        start  = time.monotonic()
+        start = time.monotonic()
         topics = await self.knowledge.list_topics()
-        count  = await self.knowledge.count()
+        count = await self.knowledge.count()
         result = {"topics": topics, "total_topics": len(topics), "total_chunks": count}
 
         await self.memory.log_tool_execution(
-            tool_name="list_knowledge_topics", arguments={},
-            result=result, status="success",
+            tool_name="list_knowledge_topics",
+            arguments={},
+            result=result,
+            status="success",
             duration_ms=int((time.monotonic() - start) * 1000),
         )
         return result
