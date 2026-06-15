@@ -25,7 +25,9 @@ class TemperatureZone(enum.Enum):
 
 
 class AssistantAgentFunction:
-    def __init__(self, memory: ClareMemory, searcher: WebSearcher, knowledge: KnowledgeBase) -> None:
+    def __init__(
+        self, memory: ClareMemory, searcher: WebSearcher, knowledge: KnowledgeBase
+    ) -> None:
         super().__init__()
         self.memory = memory
         self.searcher = searcher
@@ -136,7 +138,6 @@ class AssistantAgentFunction:
         start = time.monotonic()
         deleted = await self.memory.delete_memory(key)
         result = {"key": key, "deleted": deleted}
-
         await self.memory.log_tool_execution(
             tool_name="forget",
             arguments={"key": key},
@@ -155,7 +156,6 @@ class AssistantAgentFunction:
             "count": len(memories),
             "memories": [{"key": m["key"], "content": m["content"]} for m in memories],
         }
-
         await self.memory.log_tool_execution(
             tool_name="list_memories",
             arguments={},
