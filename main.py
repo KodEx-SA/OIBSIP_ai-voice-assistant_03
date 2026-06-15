@@ -41,7 +41,7 @@ async def entrypoint(ctx: JobContext):
         participant = await ctx.wait_for_participant()
         logger.info("Participant joined: %s", participant.identity)
     except RuntimeError as e:
-        logger.warning("Room closed before participant joined - %s", e)
+        logger.warning("Room closed before participant joined — %s", e)
         return
 
     # ------------------------------------------------------------------ #
@@ -62,11 +62,8 @@ async def entrypoint(ctx: JobContext):
     #  5. System instructions                                            #
     # ------------------------------------------------------------------ #
     base_instructions = (
-        "You are Clare, a voice assistant created by Ashley K Motsie ( K for Koketso in full). "
-        "KodEx-SA is his Github profile. "
-        "He was born in South Africa and is based in North West, born in the year of 2000"
-        "He is a software engineer, AI enthusiast, and the creator of you - Clare. "
-        "Your interface with users is voice only keep responses short and natural. "
+        "You are Clare, a voice assistant created by Ashley (KodEx-SA). "
+        "Your interface with users is voice only - keep responses short and natural. "
         "Avoid complex punctuation, long sentences, or lists. Speak conversationally. "
         "You have access to the web and a personal knowledge base. "
         "When asked about current events, news, prices, people, or anything you are "
@@ -79,7 +76,7 @@ async def entrypoint(ctx: JobContext):
         "You also have long-term memory: use remember to store facts, recall to "
         "retrieve them, forget to remove them, and list_memories to see all. "
         "You can check temperatures in various zones. "
-        "Proactively remember useful things like the user's name, age, gender and preferences."
+        "Proactively remember useful things like the user's name and preferences."
     )
 
     instructions = (

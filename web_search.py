@@ -12,57 +12,40 @@ from bs4 import BeautifulSoup
 logger = logging.getLogger("clare.web_search")
 logger.setLevel(logging.INFO)
 
-# ============================================ Constants ============================================
-
 BRAVE_URL = "https://api.search.brave.com/res/v1/web/search"
 SERP_URL = "https://serpapi.com/search"
-PAGE_TIMEOUT = 10  # seconds
-MAX_PAGE_CHARS = 8000  # truncate long pages to keep within LLM context
-
-
-# ============================================ WebSearcher ============================================
+PAGE_TIMEOUT = 10
+MAX_PAGE_CHARS = 8000
 
 
 class WebSearcher:
-    """
-    Searches the web using Brave Search API with SerpAPI as fallback.
-    Also provides page content extraction.
-
-    Usage:
-        searcher = WebSearcher()
-        results  = await searcher.search("latest AI news")
-        content  = await searcher.read_page("https://example.com")
-    """
-
     def __init__(self):
         self.brave_key = os.getenv("BRAVE_API_KEY")
         self.serp_key = os.getenv("SERPAPI_KEY")
 
         if not self.brave_key and not self.serp_key:
-            raise EnvironmentError(
-                "At least one of BRAVE_API_KEY or SERPAPI_KEY must be set."
+            logger.warning(
+                "No search API keys set (BRAVE_API_KEY / SERPAPI_KEY) - "
+                "web search tools will return empty results until keys are added."
             )
+            return
 
         if self.brave_key:
             logger.info("Brave Search API configured.")
         if self.serp_key:
             logger.info("SerpAPI configured.")
 
-    # ------------------------------------------------------------------ #
-    #  Public interface                                                  #
-    # ------------------------------------------------------------------ #
-
     async def search(self, query: str, count: int = 5) -> list[dict]:
-        """
-        Search the web. Tries Brave first, falls back to SerpAPI.
+        """Search the web. Tries Brave first, falls back to SerpAPI."""
+        if not self.brave_key and not self.serp_key:
+            logger.warning("web_search called but no API keys are set.")
+            return []
 
-        Returns a list of dicts with keys: title, url, snippet
-        """
         if self.brave_key:
             try:
                 results = await self._brave_search(query, count)
                 if results:
-                    logger.info("Brave search succeeded — query: %s", query)
+                    logger.info("Brave search succeeded - query: %s", query)
                     return results
                 logger.warning("Brave returned no results, falling back to SerpAPI")
             except Exception as e:
@@ -71,7 +54,7 @@ class WebSearcher:
         if self.serp_key:
             try:
                 results = await self._serp_search(query, count)
-                logger.info("SerpAPI search succeeded — query: %s", query)
+                logger.info("SerpAPI search succeeded - query: %s", query)
                 return results
             except Exception as e:
                 logger.error("SerpAPI also failed: %s", e)
@@ -79,10 +62,7 @@ class WebSearcher:
         return []
 
     async def read_page(self, url: str) -> str:
-        """
-        Fetch a webpage and extract its main text content.
-        Returns plain text, truncated to MAX_PAGE_CHARS.
-        """
+        """Fetch a webpage and extract its main text content."""
         try:
             async with httpx.AsyncClient(
                 timeout=PAGE_TIMEOUT,
@@ -101,10 +81,6 @@ class WebSearcher:
         except Exception as e:
             logger.error("Failed to read page %s: %s", url, e)
             return f"[Could not read page: {e}]"
-
-    # ------------------------------------------------------------------ #
-    #  Private - provider implementations                                #
-    # ------------------------------------------------------------------ #
 
     async def _brave_search(self, query: str, count: int) -> list[dict]:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -158,21 +134,14 @@ class WebSearcher:
             )
         return results
 
-    # ------------------------------------------------------------------ #
-    #  Private — page text extraction                                    #
-    # ------------------------------------------------------------------ #
-
     def _extract_text(self, html: str) -> str:
-        """Extract readable text from HTML, remove scripts/styles/nav."""
         soup = BeautifulSoup(html, "html.parser")
 
-        # Remove noise elements
         for tag in soup(
             ["script", "style", "nav", "footer", "header", "aside", "form", "iframe"]
         ):
             tag.decompose()
 
-        # Try to find main content area first
         main = (
             soup.find("main")
             or soup.find("article")
@@ -182,8 +151,6 @@ class WebSearcher:
         )
 
         text = (main or soup).get_text(separator="\n", strip=True)
-
-        # Collapse multiple blank lines
         lines = [line for line in text.splitlines() if line.strip()]
         cleaned = "\n".join(lines)
 
