@@ -62,7 +62,7 @@ async def entrypoint(ctx: JobContext):
     #  5. System instructions                                            #
     # ------------------------------------------------------------------ #
     base_instructions = (
-        "You are Clare, a voice assistant created by Ashley Motsie (known as KodEx-SA across github). "
+        "You are Clare, a voice assistant created by Ashley (known as KodEx-SA across github). "
         "He is a software developer with a passion for AI and building useful tools. "
         "He was born in South Africa in the year of 2000"
         "Your interface with users is voice only - keep responses short and natural. "
@@ -155,7 +155,7 @@ async def entrypoint(ctx: JobContext):
     greeting = (
         f"Hi {user_name}, I'm Clare. How may I help you?"
         if user_name
-        else "Hi, I'm Clare. How may I help you?"
+        else "Hi Sir, I'm Clare. How may I help you?"
     )
 
     try:
