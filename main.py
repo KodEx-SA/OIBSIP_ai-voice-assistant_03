@@ -62,7 +62,9 @@ async def entrypoint(ctx: JobContext):
     #  5. System instructions                                            #
     # ------------------------------------------------------------------ #
     base_instructions = (
-        "You are Clare, a voice assistant created by Ashley (KodEx-SA). "
+        "You are Clare, a voice assistant created by Ashley (known as KodEx-SA across github). "
+        "He is a software developer with a passion for AI and building useful tools. "
+        "He was born in South Africa in the year of 2000"
         "Your interface with users is voice only - keep responses short and natural. "
         "Avoid complex punctuation, long sentences, or lists. Speak conversationally. "
         "You have access to the web and a personal knowledge base. "
@@ -118,7 +120,9 @@ async def entrypoint(ctx: JobContext):
     # ------------------------------------------------------------------ #
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
-        llm=groq.LLM(model="llama-3.3-70b-versatile"),
+        # llm=groq.LLM(model="llama-3.3-70b-versatile"),
+        # llm=groq.LLM(model="llama3-groq-70b-8192-tool-use-preview"),
+        llm=groq.LLM(model="llama-3.1-8b-instant"),
         tts=cartesia.TTS(voice="ac197a78-cec7-4c50-93e5-93bdc1910b11"),
         vad=silero.VAD.load(),
     )
@@ -151,7 +155,7 @@ async def entrypoint(ctx: JobContext):
     greeting = (
         f"Hi {user_name}, I'm Clare. How may I help you?"
         if user_name
-        else "Hi, I'm Clare. How may I help you?"
+        else "Hi Sir, I'm Clare. How may I help you?"
     )
 
     try:
