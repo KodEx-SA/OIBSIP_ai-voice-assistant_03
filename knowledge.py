@@ -1,9 +1,3 @@
-"""
-knowledge.py - Clare's knowledge base
-Uses Supabase PostgreSQL full-text search instead of a local vector store.
-No local models, no heavy dependencies, no RAM overhead.
-"""
-
 import os
 import logging
 from datetime import datetime, timezone
