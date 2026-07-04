@@ -1,8 +1,3 @@
-"""
-memory.py — Clare's cloud memory layer
-Handles sessions, conversation history, long-term memories, and tool execution logs.
-"""
-
 import os
 import time
 import logging
@@ -46,10 +41,8 @@ class ClareMemory:
         self.room_id: str | None = None
         logger.info("ClareMemory initialised — Supabase connected.")
 
-    # ------------------------------------------------------------------ #
-    #  Session management                                                #
-    # ------------------------------------------------------------------ #
-
+    # =============================== Session management ===============================
+    
     async def start_session(self, room_id: str) -> str:
         """Create a new session row and store its ID internally."""
         self.room_id = room_id
@@ -71,9 +64,7 @@ class ClareMemory:
         ).execute()
         logger.info("Session ended — id=%s", self.session_id)
 
-    # ------------------------------------------------------------------ #
-    #  Conversation history                                              #
-    # ------------------------------------------------------------------ #
+    # =============================== Conversation history ===============================
 
     async def save_message(self, role: str, content: str) -> None:
         """Persist a single message to the current session."""
@@ -114,9 +105,7 @@ class ClareMemory:
         )
         return result.data
 
-    # ------------------------------------------------------------------ #
-    #  Long-term memory (key/value facts)                                #
-    # ------------------------------------------------------------------ #
+    # =============================== Long-term memory ===============================
 
     async def save_memory(
         self, key: str, content: str, source: str = "conversation"
@@ -179,9 +168,7 @@ class ClareMemory:
             lines.append(f"  {m['key']}: {m['content']}")
         return "\n".join(lines)
 
-    # ------------------------------------------------------------------ #
-    #  Tool execution logging                                            #
-    # ------------------------------------------------------------------ #
+    # =============================== Tool execution logging ===============================
 
     async def log_tool_execution(
         self,
