@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
-import StatsBar          from '@/components/StatsBar'
-import SessionsPanel     from '@/components/SessionsPanel'
+import StatsBar from '@/components/StatsBar'
+import SessionsPanel from '@/components/SessionsPanel'
 import ConversationPanel from '@/components/ConversationPanel'
-import ToolLogPanel      from '@/components/ToolLogPanel'
-import MemoriesPanel     from '@/components/MemoriesPanel'
-import { Session }       from '@/lib/supabase'
+import ToolLogPanel from '@/components/ToolLogPanel'
+import MemoriesPanel from '@/components/MemoriesPanel'
+import { Session } from '@/lib/supabase'
 
 export default function Dashboard() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
@@ -53,7 +53,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'tools'    && <ToolLogPanel />}
+            {activeTab === 'tools' && <ToolLogPanel />}
             {activeTab === 'memories' && <MemoriesPanel />}
           </div>
         </div>
