@@ -1,9 +1,3 @@
-"""
-web_search.py - Clare's web intelligence layer
-Handles search via Brave API (primary) and SerpAPI (fallback),
-plus page content extraction via httpx + BeautifulSoup.
-"""
-
 import os
 import logging
 import httpx
