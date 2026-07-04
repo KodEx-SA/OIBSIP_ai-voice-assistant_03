@@ -41,9 +41,13 @@ export default function ConversationPanel({ session }: Props) {
     new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
   const roleLabel = (role: string) => {
-    if (role === 'user')      return { label: 'USR', cls: 'tag-user' }
-    if (role === 'assistant') return { label: 'CLR', cls: 'tag-assistant' }
-    return                           { label: 'SYS', cls: 'tag-system' }
+    if (role === 'user') return { 
+      label: 'USR', cls: 'tag-user'
+    }
+    if (role === 'assistant') return { 
+      label: 'CLR', cls: 'tag-assistant'
+    }
+    return { label: 'SYS', cls: 'tag-system' }
   }
 
   return (
