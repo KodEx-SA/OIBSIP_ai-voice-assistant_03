@@ -1,8 +1,3 @@
-"""
-main.py - Clare voice assistant entrypoint
-Phase 3: Web intelligence added (Brave + SerpAPI + Chroma knowledge base)
-"""
-
 import asyncio
 import logging
 from dotenv import load_dotenv
@@ -28,14 +23,10 @@ logger = logging.getLogger("clare.main")
 
 
 async def entrypoint(ctx: JobContext):
-    # ------------------------------------------------------------------ #
-    #  1. Connect to LiveKit room                                        #
-    # ------------------------------------------------------------------ #
+    # 1. Connect to LiveKit room
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
-
-    # ------------------------------------------------------------------ #
-    #  2. Wait for participant                                           #
-    # ------------------------------------------------------------------ #
+    
+    # 2. Wait for participant
     logger.info("Waiting for participant to join room: %s", ctx.room.name)
     try:
         participant = await ctx.wait_for_participant()
@@ -43,24 +34,18 @@ async def entrypoint(ctx: JobContext):
     except RuntimeError as e:
         logger.warning("Room closed before participant joined — %s", e)
         return
-
-    # ------------------------------------------------------------------ #
-    #  3. Initialise memory                                              #
-    # ------------------------------------------------------------------ #
+        
+    # 3. Initialise memory
     memory = ClareMemory()
     await memory.start_session(room_id=ctx.room.name)
     memory_context = await memory.build_memory_context()
 
-    # ------------------------------------------------------------------ #
-    #  4. Initialise web intelligence (Phase 3)                          #
-    # ------------------------------------------------------------------ #
+    # 4. Initialise web intelligence
     searcher = WebSearcher()
     knowledge = KnowledgeBase()
     await knowledge.initialise()
-
-    # ------------------------------------------------------------------ #
-    #  5. System instructions                                            #
-    # ------------------------------------------------------------------ #
+    
+    # 5. System instructions
     base_instructions = (
         "You are Clare, a voice assistant created by Ashley (known as KodEx-SA across github). "
         "He is a software developer with a passion for AI and building useful tools. "
@@ -86,10 +71,8 @@ async def entrypoint(ctx: JobContext):
         if memory_context
         else base_instructions
     )
-
-    # ------------------------------------------------------------------ #
-    #  6. Wire up tools                                                  #
-    # ------------------------------------------------------------------ #
+    
+    # 6. Wire up tools
     agent_function = AssistantAgentFunction(
         memory=memory,
         searcher=searcher,
@@ -115,9 +98,7 @@ async def entrypoint(ctx: JobContext):
         ],
     )
 
-    # ------------------------------------------------------------------ #
-    #  7. Voice pipeline                                                 #
-    # ------------------------------------------------------------------ #
+    # 7. Voice pipeline
     session = AgentSession(
         stt=deepgram.STT(model="nova-3"),
         # llm=groq.LLM(model="llama-3.3-70b-versatile"),
@@ -127,9 +108,7 @@ async def entrypoint(ctx: JobContext):
         vad=silero.VAD.load(),
     )
 
-    # ------------------------------------------------------------------ #
-    #  8. Save conversation to memory                                    #
-    # ------------------------------------------------------------------ #
+    # 8. Save conversation to memory
     @session.on("user_input_transcribed")
     def on_user_spoke(event):
         if event.is_final and event.transcript.strip():
@@ -139,10 +118,8 @@ async def entrypoint(ctx: JobContext):
     def on_agent_spoke(event):
         if hasattr(event, "transcript") and event.transcript.strip():
             asyncio.ensure_future(memory.save_message("assistant", event.transcript))
-
-    # ------------------------------------------------------------------ #
-    #  9. Start session                                                  #
-    # ------------------------------------------------------------------ #
+            
+    # 9. Start session
     await session.start(
         room=ctx.room,
         agent=agent,
@@ -163,10 +140,8 @@ async def entrypoint(ctx: JobContext):
     except RuntimeError:
         logger.warning("Session closed before greeting could be sent.")
         return
-
-    # ------------------------------------------------------------------ #
-    #  10. Keep alive until room disconnects                             #
-    # ------------------------------------------------------------------ #
+        
+    # 10. Keep alive until room disconnects
     disconnect_ev = asyncio.Event()
 
     def _on_disconnected(*_):
