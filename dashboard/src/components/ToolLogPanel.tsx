@@ -4,10 +4,10 @@ import { supabase, ToolExecution } from '@/lib/supabase'
 
 const TOOL_COLORS: Record<string, string> = {
   get_temperature: 'text-cyan',
-  remember:        'text-green',
-  recall:          'text-green',
-  forget:          'text-amber',
-  list_memories:   'text-green',
+  remember: 'text-green',
+  recall: 'text-green',
+  forget: 'text-amber',
+  list_memories: 'text-green',
 }
 
 export default function ToolLogPanel() {
@@ -51,8 +51,8 @@ export default function ToolLogPanel() {
           </div>
         )}
         {execs.map((e) => {
-          const color    = TOOL_COLORS[e.tool_name] ?? 'text-[#8baabf]'
-          const isOpen   = expanded === e.id
+          const color = TOOL_COLORS[e.tool_name] ?? 'text-[#8baabf]'
+          const isOpen = expanded === e.id
           const hasError = e.status === 'error'
           return (
             <div key={e.id} className="border-b border-border">
