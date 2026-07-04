@@ -1,9 +1,3 @@
-"""
-api.py - Clare's tool functions
-Phase 1: temperature control + memory tools
-Phase 3: web search + page reading + knowledge base
-"""
-
 import enum
 import time
 import logging
@@ -41,9 +35,7 @@ class AssistantAgentFunction:
             TemperatureZone.OFFICE: 21,
         }
 
-    # ================================================================== #
-    #  Temperature                                                       #
-    # ================================================================== #
+    # =============================== Temperature ===============================
 
     @function_tool()
     async def get_temperature(self, context: RunContext, zone: TemperatureZone):
@@ -77,9 +69,7 @@ class AssistantAgentFunction:
         )
         return result
 
-    # ================================================================== #
-    #  Memory tools                                                      #
-    # ================================================================== #
+    # =============================== Memory tools ===============================
 
     @function_tool()
     async def remember(self, context: RunContext, key: str, information: str):
@@ -165,9 +155,7 @@ class AssistantAgentFunction:
         )
         return result
 
-    # ================================================================== #
-    #  Web intelligence tools (Phase 3)                                  #
-    # ================================================================== #
+    # =============================== Web intelligence tools ===============================
 
     @function_tool()
     async def web_search(self, context: RunContext, query: str):
