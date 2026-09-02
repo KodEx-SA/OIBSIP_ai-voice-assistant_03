@@ -9,10 +9,8 @@ logger.setLevel(logging.INFO)
 MAX_CHUNK_WORDS = 300
 CHUNK_OVERLAP = 60
 
-
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
-
 
 class KnowledgeBase:
     """
