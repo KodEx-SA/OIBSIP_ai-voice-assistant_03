@@ -9,14 +9,12 @@ from knowledge import KnowledgeBase
 logger = logging.getLogger("clare.api")
 logger.setLevel(logging.INFO)
 
-
 class TemperatureZone(enum.Enum):
     LIVING_ROOM = "living_room"
     BEDROOM = "bedroom"
     KITCHEN = "kitchen"
     BATHROOM = "bathroom"
     OFFICE = "office"
-
 
 class AssistantAgentFunction:
     def __init__(
@@ -240,7 +238,7 @@ class AssistantAgentFunction:
             url = item.get("url", "")
             snippet = item.get("snippet", "")
 
-            # Always store the snippet — fast and reliable
+            # Always store the snippet - fast and reliable
             if snippet:
                 stored = await self.knowledge.store(
                     content=snippet, source=url, topic=topic
