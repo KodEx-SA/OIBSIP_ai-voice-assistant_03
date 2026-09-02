@@ -8,10 +8,8 @@ from supabase import create_client, Client
 logger = logging.getLogger("clare.memory")
 logger.setLevel(logging.INFO)
 
-
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
-
 
 class ClareMemory:
     """
